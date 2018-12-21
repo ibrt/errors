@@ -107,6 +107,19 @@ func ExampleHTTPStatus() {
 	// 500
 }
 
+func ExampleHTTPStatus_default() {
+	doSomething := func() error {
+		return errors.Errorf("test error")
+	}
+
+	if err := doSomething(); err != nil {
+		fmt.Println(errors.GetHTTPStatusOrDefault(err, http.StatusInternalServerError))
+	}
+
+	// Output:
+	// 500
+}
+
 func TestHTTPStatus(t *testing.T) {
 	err := errors.Errorf("test error")
 	require.Equal(t, 0, errors.GetHTTPStatus(err))
