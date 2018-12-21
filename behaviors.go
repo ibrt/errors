@@ -81,6 +81,15 @@ func GetHTTPStatus(err error) int {
 	return 0
 }
 
+// GetHTTPStatusOrDefault extracts a HTTP status from the error metadata, if any.
+// It returns the given default status if no HTTP status was set.
+func GetHTTPStatusOrDefault(err error, defaultStatus int) int {
+	if status := GetHTTPStatus(err); status != 0 {
+		return status
+	}
+	return defaultStatus
+}
+
 // PublicMessage returns a behavior that stores a public error message in the error metadata.
 // It is useful in API servers where detailed errors are logged, while a different message is returned to clients.
 func PublicMessage(message string) Behavior {

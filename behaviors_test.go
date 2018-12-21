@@ -110,10 +110,13 @@ func ExampleHTTPStatus() {
 func TestHTTPStatus(t *testing.T) {
 	err := errors.Errorf("test error")
 	require.Equal(t, 0, errors.GetHTTPStatus(err))
+	require.Equal(t, 200, errors.GetHTTPStatusOrDefault(err, http.StatusOK))
 	err = errors.Errorf("test error", errors.HTTPStatus(http.StatusOK))
 	require.Equal(t, http.StatusOK, errors.GetHTTPStatus(err))
+	require.Equal(t, http.StatusOK, errors.GetHTTPStatusOrDefault(err, http.StatusInternalServerError))
 	err = errors.Wrap(err, errors.HTTPStatus(http.StatusInternalServerError))
 	require.Equal(t, http.StatusInternalServerError, errors.GetHTTPStatus(err))
+
 }
 
 func ExamplePublicMessage() {
