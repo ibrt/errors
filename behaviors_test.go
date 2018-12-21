@@ -3,6 +3,7 @@ package errors_test
 import (
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -21,6 +22,30 @@ func ExampleMetadata() {
 
 	// Output:
 	// value
+}
+
+func MyValue(value string) errors.Behavior {
+	return errors.Metadata(reflect.TypeOf(MyValue), value)
+}
+
+func GetMyValue(err error) string {
+	if value, ok := errors.GetMetadata(err, reflect.TypeOf(MyValue)).(string); ok {
+		return value
+	}
+	return ""
+}
+
+func ExampleMetadata_customBehavior() {
+	doSomething := func() error {
+		return errors.Errorf("test error", MyValue("my value"))
+	}
+
+	if err := doSomething(); err != nil {
+		fmt.Println(GetMyValue(err))
+	}
+
+	// Output:
+	// my value
 }
 
 func TestMetadata(t *testing.T) {
