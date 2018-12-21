@@ -36,6 +36,17 @@ func GetMyValue(err error) string {
 }
 
 func ExampleMetadata_customBehavior() {
+	//  func MyValue(value string) errors.Behavior {
+	//	  return errors.Metadata(reflect.TypeOf(MyValue), value)
+	//  }
+	//
+	//  func GetMyValue(err error) string {
+	//	  if value, ok := errors.GetMetadata(err, reflect.TypeOf(MyValue)).(string); ok {
+	//      return value
+	//    }
+	//    return ""
+	//  }
+
 	doSomething := func() error {
 		return errors.Errorf("test error", MyValue("my value"))
 	}
