@@ -116,7 +116,6 @@ func TestHTTPStatus(t *testing.T) {
 	require.Equal(t, http.StatusOK, errors.GetHTTPStatusOrDefault(err, http.StatusInternalServerError))
 	err = errors.Wrap(err, errors.HTTPStatus(http.StatusInternalServerError))
 	require.Equal(t, http.StatusInternalServerError, errors.GetHTTPStatus(err))
-
 }
 
 func ExamplePublicMessage() {
