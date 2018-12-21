@@ -17,7 +17,8 @@ func Example() {
 		if _, err := strings.NewReader("").Read(make([]byte, 1024)); err != nil {
 			return errors.Wrap(err,
 				errors.Prefix("read failed"),
-				errors.HTTPStatus(http.StatusInternalServerError))
+				errors.HTTPStatus(http.StatusInternalServerError),
+				errors.PublicMessage("internal server error"))
 		}
 		return nil
 	}
@@ -25,6 +26,7 @@ func Example() {
 	if err := doSomething(); err != nil {
 		fmt.Println(err.Error())
 		fmt.Println(errors.GetHTTPStatus(err))
+		fmt.Println(errors.GetPublicMessage(err))
 		fmt.Println(errors.Equals(err, io.EOF))
 		fmt.Println(errors.Unwrap(err) == io.EOF)
 	}
@@ -32,6 +34,7 @@ func Example() {
 	// Output:
 	// read failed: EOF
 	// 500
+	// internal server error
 	// true
 	// true
 }
