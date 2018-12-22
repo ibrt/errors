@@ -107,11 +107,11 @@ func GetPublicMessage(err error) string {
 
 // GetPublicMessageOrDefault extracts a public message from the error metadata, if any.
 // It returns the given default public message if no public message was set.
-func GetPublicMessageOrDefault(err error, defaultPublicMessage string) string {
-	if publicMessage := GetPublicMessage(err); publicMessage != "" {
-		return publicMessage
+func GetPublicMessageOrDefault(err error, defaultMessage string) string {
+	if message := GetPublicMessage(err); message != "" {
+		return message
 	}
-	return defaultPublicMessage
+	return defaultMessage
 }
 
 // Behaviors compounds multiple behaviors in a single Behavior.
