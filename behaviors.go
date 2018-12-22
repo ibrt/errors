@@ -82,7 +82,7 @@ func GetHTTPStatus(err error) int {
 }
 
 // GetHTTPStatusOrDefault extracts a HTTP status from the error metadata, if any.
-// It returns the given default status if no HTTP status was set.
+// It returns the given default HTTP status if no HTTP status was set.
 func GetHTTPStatusOrDefault(err error, defaultStatus int) int {
 	if status := GetHTTPStatus(err); status != 0 {
 		return status
@@ -90,19 +90,28 @@ func GetHTTPStatusOrDefault(err error, defaultStatus int) int {
 	return defaultStatus
 }
 
-// PublicMessage returns a behavior that stores a public error message in the error metadata.
+// PublicMessage returns a behavior that stores a public message in the error metadata.
 // It is useful in API servers where detailed errors are logged, while a different message is returned to clients.
 func PublicMessage(message string) Behavior {
 	return Metadata(reflect.ValueOf(PublicMessage), message)
 }
 
-// GetPublicMessage extracts a public error message from the error metadata, if any.
-// It returns "" if no public error message was set.
+// GetPublicMessage extracts a public message from the error metadata, if any.
+// It returns "" if no public message was set.
 func GetPublicMessage(err error) string {
 	if message, ok := GetMetadata(err, reflect.ValueOf(PublicMessage)).(string); ok {
 		return message
 	}
 	return ""
+}
+
+// GetPublicMessageOrDefault extracts a public message from the error metadata, if any.
+// It returns the given default public message if no public message was set.
+func GetPublicMessageOrDefault(err error, defaultPublicMessage string) string {
+	if publicMessage := GetPublicMessage(err); publicMessage != "" {
+		return publicMessage
+	}
+	return defaultPublicMessage
 }
 
 // Behaviors compounds multiple behaviors in a single Behavior.

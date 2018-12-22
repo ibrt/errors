@@ -146,11 +146,26 @@ func ExamplePublicMessage() {
 	// a public error
 }
 
+func ExamplePublicMessage_default() {
+	doSomething := func() error {
+		return errors.Errorf("a detailed error")
+	}
+
+	if err := doSomething(); err != nil {
+		fmt.Println(errors.GetPublicMessageOrDefault(err, "default"))
+	}
+
+	// Output:
+	// default
+}
+
 func TestPublicMessage(t *testing.T) {
 	err := errors.Errorf("test error")
 	require.Equal(t, "", errors.GetPublicMessage(err))
+	require.Equal(t, "default", errors.GetPublicMessageOrDefault(err, "default"))
 	err = errors.Errorf("test error", errors.PublicMessage("public message"))
 	require.Equal(t, "public message", errors.GetPublicMessage(err))
+	require.Equal(t, "public message", errors.GetPublicMessageOrDefault(err, "default"))
 	err = errors.Wrap(err, errors.PublicMessage("another public message"))
 	require.Equal(t, "another public message", errors.GetPublicMessage(err))
 }
