@@ -35,11 +35,22 @@ func Callers() Behavior {
 }
 
 // GetCallers extracts a stack trace from the error metadata, if any.
+// It returns nil if no stack trace was set.
 func GetCallers(err error) []uintptr {
 	if callers, ok := GetMetadata(err, reflect.ValueOf(Callers)).([]uintptr); ok {
 		return callers
 	}
 	return nil
+}
+
+// GetCallersOrCurrent extracts a stack trace from the error metadata, if any.
+// It returns the current stack trace if no stack trace was set.
+func GetCallersOrCurrent(err error) []uintptr {
+	if callers := GetCallers(err); callers != nil {
+		return callers
+	}
+	callers := make([]uintptr, 1024)
+	return callers[:runtime.Callers(2, callers[:])]
 }
 
 // Skip returns a Behavior that skips the given amount of trailing frames in the stack trace.
