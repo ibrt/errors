@@ -27,7 +27,6 @@ var (
 	HTTPStatusRequestedRangeNotSatisfiable  = HTTPStatus(http.StatusRequestedRangeNotSatisfiable)
 	HTTPStatusExpectationFailed             = HTTPStatus(http.StatusExpectationFailed)
 	HTTPStatusTeapot                        = HTTPStatus(http.StatusTeapot)
-	HTTPStatusMisdirectedRequest            = HTTPStatus(http.StatusMisdirectedRequest)
 	HTTPStatusUnprocessableEntity           = HTTPStatus(http.StatusUnprocessableEntity)
 	HTTPStatusLocked                        = HTTPStatus(http.StatusLocked)
 	HTTPStatusFailedDependency              = HTTPStatus(http.StatusFailedDependency)
@@ -69,7 +68,6 @@ var httpPublicMessages = map[int]Behavior{
 	http.StatusRequestedRangeNotSatisfiable:  PublicMessage("requested-range-not-satisfiable"),
 	http.StatusExpectationFailed:             PublicMessage("expectation-failed"),
 	http.StatusTeapot:                        PublicMessage("i-am-a-teapot"),
-	http.StatusMisdirectedRequest:            PublicMessage("misdirected-request"),
 	http.StatusUnprocessableEntity:           PublicMessage("unprocessable-entity"),
 	http.StatusLocked:                        PublicMessage("locked"),
 	http.StatusFailedDependency:              PublicMessage("failed-dependency"),

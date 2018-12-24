@@ -35,7 +35,6 @@ var testCases = []testCase{
 	{http.StatusRequestedRangeNotSatisfiable, errors.HTTPStatusRequestedRangeNotSatisfiable, "requested-range-not-satisfiable"},
 	{http.StatusExpectationFailed, errors.HTTPStatusExpectationFailed, "expectation-failed"},
 	{http.StatusTeapot, errors.HTTPStatusTeapot, "i-am-a-teapot"},
-	{http.StatusMisdirectedRequest, errors.HTTPStatusMisdirectedRequest, "misdirected-request"},
 	{http.StatusUnprocessableEntity, errors.HTTPStatusUnprocessableEntity, "unprocessable-entity"},
 	{http.StatusLocked, errors.HTTPStatusLocked, "locked"},
 	{http.StatusFailedDependency, errors.HTTPStatusFailedDependency, "failed-dependency"},
