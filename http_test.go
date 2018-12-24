@@ -9,57 +9,51 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type testCase struct {
-	status        int
-	constant      errors.Behavior
-	publicMessage string
-}
-
-var testCases = []testCase{
-	{http.StatusBadRequest, errors.HTTPStatusBadRequest, "bad-request"},
-	{http.StatusUnauthorized, errors.HTTPStatusUnauthorized, "unauthorized"},
-	{http.StatusPaymentRequired, errors.HTTPStatusPaymentRequired, "payment-required"},
-	{http.StatusForbidden, errors.HTTPStatusForbidden, "forbidden"},
-	{http.StatusNotFound, errors.HTTPStatusNotFound, "not-found"},
-	{http.StatusMethodNotAllowed, errors.HTTPStatusMethodNotAllowed, "method-not-allowed"},
-	{http.StatusNotAcceptable, errors.HTTPStatusNotAcceptable, "not-acceptable"},
-	{http.StatusProxyAuthRequired, errors.HTTPStatusProxyAuthRequired, "proxy-auth-required"},
-	{http.StatusRequestTimeout, errors.HTTPStatusRequestTimeout, "request-timeout"},
-	{http.StatusConflict, errors.HTTPStatusConflict, "conflict"},
-	{http.StatusGone, errors.HTTPStatusGone, "gone"},
-	{http.StatusLengthRequired, errors.HTTPStatusLengthRequired, "length-required"},
-	{http.StatusPreconditionFailed, errors.HTTPStatusPreconditionFailed, "precondition-failed"},
-	{http.StatusRequestEntityTooLarge, errors.HTTPStatusRequestEntityTooLarge, "request-entity-too-large"},
-	{http.StatusRequestURITooLong, errors.HTTPStatusRequestURITooLong, "request-uri-too-long"},
-	{http.StatusUnsupportedMediaType, errors.HTTPStatusUnsupportedMediaType, "unsupported-media-type"},
-	{http.StatusRequestedRangeNotSatisfiable, errors.HTTPStatusRequestedRangeNotSatisfiable, "requested-range-not-satisfiable"},
-	{http.StatusExpectationFailed, errors.HTTPStatusExpectationFailed, "expectation-failed"},
-	{http.StatusTeapot, errors.HTTPStatusTeapot, "i-am-a-teapot"},
-	{http.StatusUnprocessableEntity, errors.HTTPStatusUnprocessableEntity, "unprocessable-entity"},
-	{http.StatusLocked, errors.HTTPStatusLocked, "locked"},
-	{http.StatusFailedDependency, errors.HTTPStatusFailedDependency, "failed-dependency"},
-	{http.StatusUpgradeRequired, errors.HTTPStatusUpgradeRequired, "upgrade-required"},
-	{http.StatusPreconditionRequired, errors.HTTPStatusPreconditionRequired, "precondition-required"},
-	{http.StatusTooManyRequests, errors.HTTPStatusTooManyRequests, "too-many-requests"},
-	{http.StatusRequestHeaderFieldsTooLarge, errors.HTTPStatusRequestHeaderFieldsTooLarge, "request-header-fields-too-large"},
-	{http.StatusUnavailableForLegalReasons, errors.HTTPStatusUnavailableForLegalReasons, "unavailable-for-legal-reasons"},
-	{http.StatusInternalServerError, errors.HTTPStatusInternalServerError, "internal-server-error"},
-	{http.StatusNotImplemented, errors.HTTPStatusNotImplemented, "not-implemented"},
-	{http.StatusBadGateway, errors.HTTPStatusBadGateway, "bad-gateway"},
-	{http.StatusServiceUnavailable, errors.HTTPStatusServiceUnavailable, "service-unavailable"},
-	{http.StatusGatewayTimeout, errors.HTTPStatusGatewayTimeout, "gateway-timeout"},
-	{http.StatusHTTPVersionNotSupported, errors.HTTPStatusHTTPVersionNotSupported, "http-version-not-supported"},
-	{http.StatusVariantAlsoNegotiates, errors.HTTPStatusVariantAlsoNegotiates, "variant-also-negotiates"},
-	{http.StatusInsufficientStorage, errors.HTTPStatusInsufficientStorage, "insufficient-storage"},
-	{http.StatusLoopDetected, errors.HTTPStatusLoopDetected, "loop-detected"},
-	{http.StatusNotExtended, errors.HTTPStatusNotExtended, "not-extended"},
-	{http.StatusNetworkAuthenticationRequired, errors.HTTPStatusNetworkAuthenticationRequired, "network-authentication-required"},
+var testCases = map[int]errors.Behavior{
+	http.StatusBadRequest:                    errors.HTTPStatusBadRequest,
+	http.StatusUnauthorized:                  errors.HTTPStatusUnauthorized,
+	http.StatusPaymentRequired:               errors.HTTPStatusPaymentRequired,
+	http.StatusForbidden:                     errors.HTTPStatusForbidden,
+	http.StatusNotFound:                      errors.HTTPStatusNotFound,
+	http.StatusMethodNotAllowed:              errors.HTTPStatusMethodNotAllowed,
+	http.StatusNotAcceptable:                 errors.HTTPStatusNotAcceptable,
+	http.StatusProxyAuthRequired:             errors.HTTPStatusProxyAuthRequired,
+	http.StatusRequestTimeout:                errors.HTTPStatusRequestTimeout,
+	http.StatusConflict:                      errors.HTTPStatusConflict,
+	http.StatusGone:                          errors.HTTPStatusGone,
+	http.StatusLengthRequired:                errors.HTTPStatusLengthRequired,
+	http.StatusPreconditionFailed:            errors.HTTPStatusPreconditionFailed,
+	http.StatusRequestEntityTooLarge:         errors.HTTPStatusRequestEntityTooLarge,
+	http.StatusRequestURITooLong:             errors.HTTPStatusRequestURITooLong,
+	http.StatusUnsupportedMediaType:          errors.HTTPStatusUnsupportedMediaType,
+	http.StatusRequestedRangeNotSatisfiable:  errors.HTTPStatusRequestedRangeNotSatisfiable,
+	http.StatusExpectationFailed:             errors.HTTPStatusExpectationFailed,
+	http.StatusTeapot:                        errors.HTTPStatusTeapot,
+	http.StatusUnprocessableEntity:           errors.HTTPStatusUnprocessableEntity,
+	http.StatusLocked:                        errors.HTTPStatusLocked,
+	http.StatusFailedDependency:              errors.HTTPStatusFailedDependency,
+	http.StatusUpgradeRequired:               errors.HTTPStatusUpgradeRequired,
+	http.StatusPreconditionRequired:          errors.HTTPStatusPreconditionRequired,
+	http.StatusTooManyRequests:               errors.HTTPStatusTooManyRequests,
+	http.StatusRequestHeaderFieldsTooLarge:   errors.HTTPStatusRequestHeaderFieldsTooLarge,
+	http.StatusUnavailableForLegalReasons:    errors.HTTPStatusUnavailableForLegalReasons,
+	http.StatusInternalServerError:           errors.HTTPStatusInternalServerError,
+	http.StatusNotImplemented:                errors.HTTPStatusNotImplemented,
+	http.StatusBadGateway:                    errors.HTTPStatusBadGateway,
+	http.StatusServiceUnavailable:            errors.HTTPStatusServiceUnavailable,
+	http.StatusGatewayTimeout:                errors.HTTPStatusGatewayTimeout,
+	http.StatusHTTPVersionNotSupported:       errors.HTTPStatusHTTPVersionNotSupported,
+	http.StatusVariantAlsoNegotiates:         errors.HTTPStatusVariantAlsoNegotiates,
+	http.StatusInsufficientStorage:           errors.HTTPStatusInsufficientStorage,
+	http.StatusLoopDetected:                  errors.HTTPStatusLoopDetected,
+	http.StatusNotExtended:                   errors.HTTPStatusNotExtended,
+	http.StatusNetworkAuthenticationRequired: errors.HTTPStatusNetworkAuthenticationRequired,
 }
 
 func TestHTTPStatusConstants(t *testing.T) {
-	for _, testCase := range testCases {
-		t.Run(http.StatusText(testCase.status), func(t *testing.T) {
-			require.Equal(t, testCase.status, errors.GetHTTPStatus(errors.Errorf("err", testCase.constant)))
+	for status, constant := range testCases {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			require.Equal(t, status, errors.GetHTTPStatus(errors.Errorf("err", constant)))
 		})
 	}
 }
@@ -99,65 +93,4 @@ func TestHTTPStatus(t *testing.T) {
 	require.Equal(t, http.StatusOK, errors.GetHTTPStatusOrDefault(err, http.StatusInternalServerError))
 	err = errors.Wrap(err, errors.HTTPStatus(http.StatusInternalServerError))
 	require.Equal(t, http.StatusInternalServerError, errors.GetHTTPStatus(err))
-}
-
-func ExampleHTTPPublicMessage() {
-	doSomething := func() error {
-		return errors.Errorf("test error", errors.HTTPPublicMessage(http.StatusInternalServerError))
-	}
-
-	if err := doSomething(); err != nil {
-		fmt.Println(errors.GetPublicMessage(err))
-	}
-
-	// Output:
-	// internal-server-error
-}
-
-func ExampleHTTPPublicMessage_unknown() {
-	doSomething := func() error {
-		return errors.Errorf("test error", errors.HTTPPublicMessage(499))
-	}
-
-	if err := doSomething(); err != nil {
-		fmt.Println(errors.GetPublicMessage(err))
-	}
-
-	// Output:
-	// unknown
-}
-
-func TestHTTPPublicMessage(t *testing.T) {
-	for _, testCase := range testCases {
-		t.Run(http.StatusText(testCase.status), func(t *testing.T) {
-			err := errors.Errorf("err", errors.HTTPPublicMessage(testCase.status))
-			require.Equal(t, testCase.publicMessage, errors.GetPublicMessage(err))
-		})
-	}
-
-	t.Run("Unknown", func(t *testing.T) {
-		err := errors.Errorf("err", errors.HTTPPublicMessage(499))
-		require.Equal(t, "unknown", errors.GetPublicMessage(err))
-	})
-}
-
-func ExampleHTTPError() {
-	doSomething := func() error {
-		return errors.Errorf("test error", errors.HTTPError(http.StatusInternalServerError))
-	}
-
-	if err := doSomething(); err != nil {
-		fmt.Println(errors.GetHTTPStatus(err))
-		fmt.Println(errors.GetPublicMessage(err))
-	}
-
-	// Output:
-	// 500
-	// internal-server-error
-}
-
-func TestHTTPError(t *testing.T) {
-	err := errors.Errorf("test error", errors.HTTPError(http.StatusInternalServerError))
-	require.Equal(t, http.StatusInternalServerError, errors.GetHTTPStatus(err))
-	require.Equal(t, "internal-server-error", errors.GetPublicMessage(err))
 }

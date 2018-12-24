@@ -3,9 +3,9 @@
 // implemented by users. The provided *Error type implements error and can be used interchangeably with code that
 // expects a regular error return.
 //
-// The package provides several built-in behaviors (Prefix, Metadata, Callers, Skip, PublicMessage, HTTPStatus,
-// HTTPPublicMessage, HTTPError), ways to wrap and create errors (Errorf, MustErrorf, (Maybe)?Wrap, (Maybe)?MustWrap,
-// (Maybe)?WrapRecover), and utilities (Assert, Ignore, IgnoreClose, Unwrap, Equals).
+// The package provides several built-in behaviors (Prefix, Metadata, Callers, Skip, PublicMessage, HTTPStatus), ways to
+// wrap and create errors (Errorf, MustErrorf, (Maybe)?Wrap, (Maybe)?MustWrap, (Maybe)?WrapRecover), and utilities
+// (Assert, Ignore, IgnoreClose, Unwrap, Equals).
 package errors
 
 import (

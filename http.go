@@ -48,47 +48,6 @@ var (
 	HTTPStatusNetworkAuthenticationRequired = HTTPStatus(http.StatusNetworkAuthenticationRequired)
 )
 
-var httpPublicMessages = map[int]Behavior{
-	http.StatusBadRequest:                    PublicMessage("bad-request"),
-	http.StatusUnauthorized:                  PublicMessage("unauthorized"),
-	http.StatusPaymentRequired:               PublicMessage("payment-required"),
-	http.StatusForbidden:                     PublicMessage("forbidden"),
-	http.StatusNotFound:                      PublicMessage("not-found"),
-	http.StatusMethodNotAllowed:              PublicMessage("method-not-allowed"),
-	http.StatusNotAcceptable:                 PublicMessage("not-acceptable"),
-	http.StatusProxyAuthRequired:             PublicMessage("proxy-auth-required"),
-	http.StatusRequestTimeout:                PublicMessage("request-timeout"),
-	http.StatusConflict:                      PublicMessage("conflict"),
-	http.StatusGone:                          PublicMessage("gone"),
-	http.StatusLengthRequired:                PublicMessage("length-required"),
-	http.StatusPreconditionFailed:            PublicMessage("precondition-failed"),
-	http.StatusRequestEntityTooLarge:         PublicMessage("request-entity-too-large"),
-	http.StatusRequestURITooLong:             PublicMessage("request-uri-too-long"),
-	http.StatusUnsupportedMediaType:          PublicMessage("unsupported-media-type"),
-	http.StatusRequestedRangeNotSatisfiable:  PublicMessage("requested-range-not-satisfiable"),
-	http.StatusExpectationFailed:             PublicMessage("expectation-failed"),
-	http.StatusTeapot:                        PublicMessage("i-am-a-teapot"),
-	http.StatusUnprocessableEntity:           PublicMessage("unprocessable-entity"),
-	http.StatusLocked:                        PublicMessage("locked"),
-	http.StatusFailedDependency:              PublicMessage("failed-dependency"),
-	http.StatusUpgradeRequired:               PublicMessage("upgrade-required"),
-	http.StatusPreconditionRequired:          PublicMessage("precondition-required"),
-	http.StatusTooManyRequests:               PublicMessage("too-many-requests"),
-	http.StatusRequestHeaderFieldsTooLarge:   PublicMessage("request-header-fields-too-large"),
-	http.StatusUnavailableForLegalReasons:    PublicMessage("unavailable-for-legal-reasons"),
-	http.StatusInternalServerError:           PublicMessage("internal-server-error"),
-	http.StatusNotImplemented:                PublicMessage("not-implemented"),
-	http.StatusBadGateway:                    PublicMessage("bad-gateway"),
-	http.StatusServiceUnavailable:            PublicMessage("service-unavailable"),
-	http.StatusGatewayTimeout:                PublicMessage("gateway-timeout"),
-	http.StatusHTTPVersionNotSupported:       PublicMessage("http-version-not-supported"),
-	http.StatusVariantAlsoNegotiates:         PublicMessage("variant-also-negotiates"),
-	http.StatusInsufficientStorage:           PublicMessage("insufficient-storage"),
-	http.StatusLoopDetected:                  PublicMessage("loop-detected"),
-	http.StatusNotExtended:                   PublicMessage("not-extended"),
-	http.StatusNetworkAuthenticationRequired: PublicMessage("network-authentication-required"),
-}
-
 // HTTPStatus returns a behavior that stores a HTTP status in the error metadata.
 func HTTPStatus(status int) Behavior {
 	return Metadata(reflect.ValueOf(HTTPStatus), status)
@@ -110,19 +69,4 @@ func GetHTTPStatusOrDefault(err error, defaultStatus int) int {
 		return status
 	}
 	return defaultStatus
-}
-
-// HTTPPublicMessage returns a default PublicMessage Behavior corresponding to the given HTTP status.
-// If the given status is not a HTTP 4xx or 5xx status registered with IANA, it returns PublicMessage("unknown").
-// See: https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
-func HTTPPublicMessage(status int) Behavior {
-	if behavior, ok := httpPublicMessages[status]; ok {
-		return behavior
-	}
-	return PublicMessage("unknown")
-}
-
-// HTTPError returns a compound Behavior that includes both HTTPStatus and HTTPublicMessage for the given HTTP status.
-func HTTPError(status int) Behavior {
-	return Behaviors(HTTPStatus(status), HTTPPublicMessage(status))
 }
