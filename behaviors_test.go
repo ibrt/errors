@@ -2,7 +2,6 @@ package errors_test
 
 import (
 	"fmt"
-	"net/http"
 	"reflect"
 	"strings"
 	"testing"
@@ -94,43 +93,6 @@ func TestPrefix(t *testing.T) {
 	require.Equal(t, "final error: next error: other error: test error", err.Error())
 }
 
-func ExampleHTTPStatus() {
-	doSomething := func() error {
-		return errors.Errorf("test error", errors.HTTPStatus(http.StatusInternalServerError))
-	}
-
-	if err := doSomething(); err != nil {
-		fmt.Println(errors.GetHTTPStatus(err))
-	}
-
-	// Output:
-	// 500
-}
-
-func ExampleHTTPStatus_default() {
-	doSomething := func() error {
-		return errors.Errorf("test error")
-	}
-
-	if err := doSomething(); err != nil {
-		fmt.Println(errors.GetHTTPStatusOrDefault(err, http.StatusInternalServerError))
-	}
-
-	// Output:
-	// 500
-}
-
-func TestHTTPStatus(t *testing.T) {
-	err := errors.Errorf("test error")
-	require.Equal(t, 0, errors.GetHTTPStatus(err))
-	require.Equal(t, 200, errors.GetHTTPStatusOrDefault(err, http.StatusOK))
-	err = errors.Errorf("test error", errors.HTTPStatus(http.StatusOK))
-	require.Equal(t, http.StatusOK, errors.GetHTTPStatus(err))
-	require.Equal(t, http.StatusOK, errors.GetHTTPStatusOrDefault(err, http.StatusInternalServerError))
-	err = errors.Wrap(err, errors.HTTPStatus(http.StatusInternalServerError))
-	require.Equal(t, http.StatusInternalServerError, errors.GetHTTPStatus(err))
-}
-
 func ExamplePublicMessage() {
 	doSomething := func() error {
 		return errors.Errorf("a detailed error", errors.PublicMessage("a public error"))
@@ -168,26 +130,4 @@ func TestPublicMessage(t *testing.T) {
 	require.Equal(t, "public message", errors.GetPublicMessageOrDefault(err, "default"))
 	err = errors.Wrap(err, errors.PublicMessage("another public message"))
 	require.Equal(t, "another public message", errors.GetPublicMessage(err))
-}
-
-func ExampleBehaviors() {
-	doSomething := func() error {
-		behaviors := errors.Behaviors(errors.Prefix("prefix"), errors.HTTPStatus(http.StatusInternalServerError))
-		return errors.Errorf("test error", behaviors)
-	}
-
-	if err := doSomething(); err != nil {
-		fmt.Println(err.Error())
-		fmt.Println(errors.GetHTTPStatus(err))
-	}
-
-	// Output:
-	// prefix: test error
-	// 500
-}
-
-func TestBehaviors(t *testing.T) {
-	facets := errors.Behaviors(errors.Prefix("other error"), errors.Prefix("next error"))
-	err := errors.Errorf("test error", facets)
-	require.Equal(t, "next error: other error: test error", err.Error())
 }

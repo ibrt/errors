@@ -25,3 +25,12 @@ func FormatCallers(callers []uintptr) []string {
 
 	return formattedCallers
 }
+
+// Behaviors compounds multiple behaviors in a single Behavior.
+func Behaviors(behaviors ...Behavior) Behavior {
+	return func(doubleWrap bool, e *Error) {
+		for _, behavior := range behaviors {
+			behavior(doubleWrap, e)
+		}
+	}
+}

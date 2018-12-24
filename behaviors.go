@@ -78,29 +78,6 @@ func GetPrefix(err error) string {
 	return ""
 }
 
-// HTTPStatus returns a behavior that stores a HTTP status in the error metadata.
-func HTTPStatus(status int) Behavior {
-	return Metadata(reflect.ValueOf(HTTPStatus), status)
-}
-
-// GetHTTPStatus extracts a HTTP status from the error metadata, if any.
-// It returns 0 if no HTTP status was set.
-func GetHTTPStatus(err error) int {
-	if status, ok := GetMetadata(err, reflect.ValueOf(HTTPStatus)).(int); ok {
-		return status
-	}
-	return 0
-}
-
-// GetHTTPStatusOrDefault extracts a HTTP status from the error metadata, if any.
-// It returns the given default HTTP status if no HTTP status was set.
-func GetHTTPStatusOrDefault(err error, defaultStatus int) int {
-	if status := GetHTTPStatus(err); status != 0 {
-		return status
-	}
-	return defaultStatus
-}
-
 // PublicMessage returns a behavior that stores a public message in the error metadata.
 // It is useful in API servers where detailed errors are logged, while a different message is returned to clients.
 func PublicMessage(message string) Behavior {
@@ -123,13 +100,4 @@ func GetPublicMessageOrDefault(err error, defaultMessage string) string {
 		return message
 	}
 	return defaultMessage
-}
-
-// Behaviors compounds multiple behaviors in a single Behavior.
-func Behaviors(behaviors ...Behavior) Behavior {
-	return func(doubleWrap bool, e *Error) {
-		for _, behavior := range behaviors {
-			behavior(doubleWrap, e)
-		}
-	}
 }
