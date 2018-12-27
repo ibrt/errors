@@ -2,7 +2,7 @@
 
 Package `errors` extends the functionality of Go's built-in error interface: it attaches stack traces to errors and supports behaviors such as carrying debug values and HTTP status codes. Additional behaviors can be easily implemented by users. The provided `*Error` type implements `error` and can be used interchangeably with code that expects a regular error return.
 
-The package provides several built-in behaviors (`Prefix`, `Metadata`, `Callers`, `Skip`, `PublicMessage`, `HTTPStatus`), ways to wrap and create errors (`Errorf`, `MustErrorf`, `(Maybe)?Wrap`, `(Maybe)?MustWrap`, `(Maybe)?WrapRecover`), and utilities (`Assert`, `Ignore`, `IgnoreClose`, `Unwrap`, `Equals`). See [GoDoc](https://godoc.org/github.com/ibrt/errors) for detailed usage examples.
+The package provides several built-in behaviors (`Prefix`, `Metadata`, `Callers`, `Skip`, `PublicMessage`, `HTTPStatus`), ways to wrap and create errors (`Errorf`, `MustErrorf`, `(Maybe)?Wrap`, `(Maybe)?MustWrap`, `(Maybe)?WrapRecover`), and utilities (`Assert`, `Ignore`, `IgnoreClose`, `Unwrap`, `Equals`).
 
 #### Basic Example
 
@@ -27,6 +27,8 @@ if err := doSomething(); err != nil {
 }
 ```
 
+Outputs:
+
 ```
 read failed: EOF
 500
@@ -35,3 +37,5 @@ true
 true
 [ some_pkg.SomeFunc (/Users/../some_pkg/file.go:26) ... ]
 ```
+
+See the [GoDoc](https://godoc.org/github.com/ibrt/errors) for detailed usage examples.
