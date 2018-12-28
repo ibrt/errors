@@ -75,7 +75,7 @@ func TestSkip(t *testing.T) {
 
 func ExamplePrefix() {
 	doSomething := func() error {
-		return errors.Errorf("test error", errors.Prefix("prefix"))
+		return errors.Errorf("test error", errors.Prefix("prefix '%v'", true))
 	}
 
 	if err := doSomething(); err != nil {
@@ -83,14 +83,14 @@ func ExamplePrefix() {
 	}
 
 	// Output:
-	// prefix: test error
+	// prefix 'true': test error
 }
 
 func TestPrefix(t *testing.T) {
 	err := errors.Errorf("test error", errors.Prefix("other error"), errors.Prefix("next error"))
 	require.Equal(t, "next error: other error: test error", err.Error())
-	err = errors.Wrap(err, errors.Prefix("final error"))
-	require.Equal(t, "final error: next error: other error: test error", err.Error())
+	err = errors.Wrap(err, errors.Prefix("final error '%v'", true))
+	require.Equal(t, "final error 'true': next error: other error: test error", err.Error())
 }
 
 func ExamplePublicMessage() {

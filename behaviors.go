@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"fmt"
 	"reflect"
 	"runtime"
 )
@@ -62,10 +63,11 @@ func Skip(skip int) Behavior {
 	}
 }
 
-// Prefix returns a Behavior that prepends a prefix to the error message.
-func Prefix(prefix string) Behavior {
+// Prefix returns a Behavior that prepends a prefix to the error message. The prefixFormat and parameters are first
+// passed through fmt.Sprintf().
+func Prefix(prefixFormat string, a ...interface{}) Behavior {
 	return func(doubleWrap bool, e *Error) {
-		Metadata(reflect.ValueOf(Prefix), prefix+": "+GetPrefix(e))(doubleWrap, e)
+		Metadata(reflect.ValueOf(Prefix), fmt.Sprintf(prefixFormat, a...)+": "+GetPrefix(e))(doubleWrap, e)
 	}
 }
 
