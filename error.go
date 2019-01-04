@@ -1,11 +1,12 @@
 // Package errors extends the functionality of Go's built-in error interface: it attaches stack traces to errors and
 // supports behaviors such as carrying debug values and HTTP status codes. Additional behaviors can be easily
 // implemented by users. The provided *Error type implements error and can be used interchangeably with code that
-// expects a regular error return.
+// expects a regular error return. Additionally, multiple errors can be merged in a single one using the provided Errors
+// type.
 //
 // The package provides several built-in behaviors (Prefix, Metadata, Callers, Skip, PublicMessage, HTTPStatus), ways to
-// wrap and create errors (Errorf, MustErrorf, (Maybe)?Wrap, (Maybe)?MustWrap, (Maybe)?WrapRecover), and utilities
-// (Assert, Ignore, IgnoreClose, Unwrap, Equals).
+// wrap and create errors (Errorf, MustErrorf, (Maybe)?Wrap, (Maybe)?MustWrap, (Maybe)?WrapRecover), ways to compound
+// errors ((Maybe)?Append) and utilities (Assert, Ignore, IgnoreClose, Unwrap, Equals).
 package errors
 
 import (
@@ -27,9 +28,9 @@ func (e *Error) Error() string {
 	return GetPrefix(e) + e.err.Error()
 }
 
-// Wrap wraps the given error into a *Error, applying the given behaviors plus Callers. If the given error is already
-// an *Error, only the behaviors are applied. If the given error is a compound error, Wrap() is applied to the last
-// inner error.
+// Wrap wraps the given error into an *Error, applying the given behaviors plus Callers. If the given error is already
+// wrapped, only the behaviors are applied. If the given error is a compound error, Wrap is applied to the last inner
+// error.
 func Wrap(err error, behaviors ...Behavior) error {
 	if err == nil {
 		panic("nil error")
@@ -159,12 +160,12 @@ func MustErrorf(format string, behaviorOrArg ...interface{}) {
 	panic(Errorf(format, behaviorOrArg...))
 }
 
-// Append appends newErr to existingErr, returning or extending compound error. See the Errors type GoDoc for more
+// Append appends newErr to existingErr, creating or extending a compound error. See the Errors type GoDoc for more
 // information about compound errors. All parameters can be of type error, *Error, or Errors. If newErr is a compound
 // error, all the inner errors are appended.
 //
-// Note: if existingErr is  nil, Append() behaves like Wrap() on newErr, thus returning a non-compound error. In all
-// other cases a compound error is returned.
+// Note: if existingErr is  nil, Append behaves like Wrap on newErr, thus returning a non-compound error. In all other
+// cases a compound error is returned.
 func Append(existingErr, newErr error) error {
 	if newErr == nil {
 		panic("nil error")
@@ -201,6 +202,18 @@ func Append(existingErr, newErr error) error {
 	}
 }
 
+// MaybeAppend is like Append, but simply returns existingErr if newErr is nil.
+func MaybeAppend(existingErr, newErr error) error {
+	if newErr == nil {
+		return existingErr
+	}
+	if wErr, ok := newErr.(Errors); ok && len(wErr) == 0 {
+		return existingErr
+	}
+
+	return Append(existingErr, newErr)
+}
+
 // Assert is like MustErrorf if cond is false, does nothing otherwise.
 func Assert(cond bool, format string, behaviorOrArg ...interface{}) {
 	if cond {
@@ -221,7 +234,7 @@ func IgnoreClose(c io.Closer) {
 	Ignore(c.Close())
 }
 
-// Unwrap undoes Wrap(), returning the original error. If the given error is already unwrapped, it is simply returned
+// Unwrap undoes Wrap, returning the original error. If the given error is already unwrapped, it is simply returned
 // as is. If the given error is a compound error, the last inner error is unwrapped and returned.
 func Unwrap(err error) error {
 	if wErr, ok := err.(*Error); ok {
@@ -234,8 +247,8 @@ func Unwrap(err error) error {
 	return err
 }
 
-// Equals returns true if the given error equals any of the given "causes". If the given error is a compound error, it
-// returns true if any of the inner errors equals any of the given "causes". Both the given error and causes are
+// Equals returns true if the given error equals any of the given causes. If the given error is a compound error, Equals
+// returns true if any of the inner errors equals any of the given causes. Both the given error and causes are
 // unwrapped before checking for equality.
 func Equals(err error, causes ...error) bool {
 	if wErrs, ok := err.(Errors); ok {
