@@ -37,6 +37,11 @@ func Wrap(err error, behaviors ...Behavior) error {
 		return wErr
 	}
 
+	if wErrs, ok := err.(Errors); ok {
+		Behaviors(behaviors...)(true, wErrs[len(wErrs)-1])
+		return wErrs
+	}
+
 	wErr := &Error{
 		err:      err,
 		metadata: make(map[interface{}]interface{}),
@@ -87,6 +92,8 @@ func WrapRecover(r interface{}, behaviors ...Behavior) error {
 	switch r := r.(type) {
 	case *Error:
 		return r
+	case Errors:
+		return r
 	case error:
 		return Wrap(r, behaviors...)
 	default:
@@ -128,6 +135,39 @@ func MustErrorf(format string, behaviorOrArg ...interface{}) {
 	panic(Errorf(format, behaviorOrArg...))
 }
 
+// Append appends newErr to existingErr, returning a compound error. See the Errors type GoDoc for more information
+// about compound errors. All parameters can be of type error, *Error, or Errors. If existingErr is nil, Append()
+// behaves like Wrap() on newErr. If newErr is of type Errors, all the contained errors are appended.
+func Append(existingErr, newErr error) error {
+	if newErr == nil {
+		panic("nil error")
+	}
+
+	if existingErr == nil {
+		return Wrap(newErr)
+	}
+
+	var wErrs Errors
+
+	switch err := existingErr.(type) {
+	case *Error:
+		wErrs = Errors{err}
+	case Errors:
+		wErrs = err
+	default:
+		wErrs = Errors{Wrap(err).(*Error)}
+	}
+
+	switch err := newErr.(type) {
+	case *Error:
+		return append(wErrs, err)
+	case Errors:
+		return append(wErrs, err...)
+	default:
+		return append(wErrs, Wrap(err).(*Error))
+	}
+}
+
 // Assert is like MustErrorf if cond is false, does nothing otherwise.
 func Assert(cond bool, format string, behaviorOrArg ...interface{}) {
 	if cond {
@@ -148,22 +188,45 @@ func IgnoreClose(c io.Closer) {
 	Ignore(c.Close())
 }
 
-// Unwrap returns the wrapped error if the given error is of type *Error, the given error itself otherwise.
+// Unwrap returns the wrapped error if the given error is of type *Error, the last wrapped error if the given error is
+// of type Errors, or the given error itself otherwise.
 func Unwrap(err error) error {
 	if wErr, ok := err.(*Error); ok {
 		return wErr.err
+	}
+	if wErrs, ok := err.(Errors); ok {
+		return Unwrap(wErrs[len(wErrs)-1])
 	}
 
 	return err
 }
 
-// Equals returns true if the given error equals any of the given "causes" (after unwrapping).
+// Equals returns true if the given error equals any of the given "causes". If the given error is a compound error, it
+// returns true if any of the individual errors equals any of the given "causes".
 func Equals(err error, causes ...error) bool {
+	if wErrs, ok := err.(Errors); ok {
+		for _, wErr := range wErrs {
+			if Equals(wErr, causes...) {
+				return true
+			}
+		}
+
+		return false
+	}
+
 	err = Unwrap(err)
 
 	for _, cause := range causes {
-		if err == Unwrap(cause) {
-			return true
+		if wErrs, ok := cause.(Errors); ok {
+			for _, cause := range wErrs {
+				if err == Unwrap(cause) {
+					return true
+				}
+			}
+		} else {
+			if err == Unwrap(cause) {
+				return true
+			}
 		}
 	}
 

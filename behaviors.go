@@ -21,6 +21,15 @@ func GetMetadata(err error, key interface{}) interface{} {
 	if e, ok := err.(*Error); ok {
 		return e.metadata[key]
 	}
+
+	if e, ok := err.(Errors); ok {
+		for i := len(e) - 1; i >= 0; i-- {
+			if v, ok := e[i].metadata[key]; ok {
+				return v
+			}
+		}
+	}
+
 	return nil
 }
 
