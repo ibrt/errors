@@ -38,7 +38,7 @@ func ExampleErrors() {
 		fmt.Println(errors.GetHTTPStatus(errs))
 		fmt.Println(errors.GetPublicMessage(errs))
 		fmt.Println(errors.Equals(errs, io.EOF))
-		fmt.Println(errors.Unwrap(errs) == io.EOF) // note: Unwrap returns the last error
+		fmt.Println(errors.Unwrap(errs) == io.EOF) // Unwrap returns the last error
 	}
 
 	// Output:

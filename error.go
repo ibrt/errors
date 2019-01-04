@@ -21,6 +21,9 @@ type Error struct {
 
 // Error implements error.
 func (e *Error) Error() string {
+	if e == nil {
+		panic("nil error")
+	}
 	return GetPrefix(e) + e.err.Error()
 }
 
