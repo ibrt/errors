@@ -17,6 +17,8 @@ func Metadata(key, value interface{}) Behavior {
 }
 
 // GetMetadata extracts the given key from the error metadata.
+// If the given error is compound, the key is searched starting from the last inner error, and the first match (if any)
+// is returned.
 func GetMetadata(err error, key interface{}) interface{} {
 	if e, ok := err.(*Error); ok {
 		return e.metadata[key]
@@ -72,8 +74,8 @@ func Skip(skip int) Behavior {
 	}
 }
 
-// Prefix returns a Behavior that prepends a prefix to the error message. The prefixFormat and parameters are first
-// passed through fmt.Sprintf().
+// Prefix returns a Behavior that prepends a prefix to the error message.
+// The prefixFormat and parameters are first passed through fmt.Sprintf().
 func Prefix(prefixFormat string, a ...interface{}) Behavior {
 	return func(doubleWrap bool, e *Error) {
 		Metadata(reflect.ValueOf(Prefix), fmt.Sprintf(prefixFormat, a...)+": "+GetPrefix(e))(doubleWrap, e)

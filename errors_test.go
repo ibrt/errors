@@ -42,7 +42,7 @@ func ExampleErrors() {
 	}
 
 	// Output:
-	// multiple errors: read failed: EOF, some error
+	// multiple errors: read failed: EOF · some error
 	// 500
 	// internal server error
 	// true
