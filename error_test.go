@@ -617,4 +617,6 @@ func TestEquals(t *testing.T) {
 	errs := errors.Append(err, fmt.Errorf("other error"))
 	require.True(t, errors.Equals(errs, err))
 	require.True(t, errors.Equals(err, errs))
+	require.False(t, errors.Equals(errs, fmt.Errorf("third error")))
+
 }

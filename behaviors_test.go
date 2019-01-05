@@ -23,6 +23,19 @@ func ExampleMetadata() {
 	// value
 }
 
+func ExampleMetadata_compound() {
+	err1 := errors.Errorf("first error", errors.Metadata("k1", "v1"), errors.Metadata("k2", "v2"))
+	err2 := errors.Errorf("second error", errors.Metadata("k2", "changed"))
+	errs := errors.Append(err1, err2)
+
+	fmt.Println(errors.GetMetadata(errs, "k1"))
+	fmt.Println(errors.GetMetadata(errs, "k2"))
+
+	// Output:
+	// v1
+	// changed
+}
+
 func MyValue(value string) errors.Behavior {
 	return errors.Metadata(reflect.TypeOf(MyValue), value)
 }
@@ -62,6 +75,15 @@ func TestMetadata(t *testing.T) {
 	require.Nil(t, errors.GetMetadata(fmt.Errorf("test error"), "key"))
 	err := errors.Errorf("test error", errors.Metadata("key", "value"))
 	require.Equal(t, "value", errors.GetMetadata(err, "key"))
+}
+
+func TestCallers(t *testing.T) {
+	err := fmt.Errorf("test error")
+	require.Nil(t, errors.GetCallers(err))
+	require.True(t, strings.HasPrefix(errors.FormatCallers(errors.GetCallersOrCurrent(err))[0], "errors_test.TestCallers"))
+	err = errors.Errorf("test error")
+	require.True(t, strings.HasPrefix(errors.FormatCallers(errors.GetCallers(err))[0], "errors_test.TestCallers"))
+	require.True(t, strings.HasPrefix(errors.FormatCallers(errors.GetCallersOrCurrent(err))[0], "errors_test.TestCallers"))
 }
 
 func TestSkip(t *testing.T) {
