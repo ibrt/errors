@@ -3,8 +3,8 @@
 // errors can be easily implemented by users. Multiple errors can be merged into a compound one.
 //
 // The package provides several built-in behaviors (Prefix, Metadata, Callers, Skip, PublicMessage, HTTPStatus), ways to
-// wrap and create errors (Errorf, MustErrorf, (Maybe)?Wrap, (Maybe)?MustWrap, (Maybe)?WrapRecover), ways to compound
-// errors ((Maybe)?Append, ((Maybe?)Split) and utilities (Assert, Ignore, IgnoreClose, Unwrap, Equals).
+// wrap and create errors ((Must?)Errorf, (Maybe)?(Must)?Wrap, (Maybe)?(Must?)WrapRecover), ways to compound errors
+// ((Maybe)?Append, ((Maybe?)Split) and utilities (Assert, Ignore, IgnoreClose, Unwrap, Equals).
 //
 // A wrapped error augments Go built-in errors with stack traces and additional behaviors. It can be created from an
 // existing error using one of the Wrap function variants, or from scratch using one of the Errorf variants. To clients
@@ -51,7 +51,7 @@ func (e wrappedErrors) Error() string {
 }
 
 // Wrap wraps the given error, applying the given behaviors plus Callers. If the given error is already wrapped, only
-// the behaviors are applied. If the given error is a compound error, Wrap is applied to the last inner error.
+// the provided behaviors are applied. If the given error is a compound error, Wrap is applied to the last inner error.
 func Wrap(err error, behaviors ...Behavior) error {
 	if err == nil {
 		panic("nil error")
@@ -163,10 +163,9 @@ func MustErrorf(format string, behaviorOrArg ...interface{}) {
 }
 
 // Append appends newErr to existingErr, creating or extending a compound error. All parameters can be unwrapped errors,
-// wrapped errors, or compound errors. If newErr is a compound error, all the inner errors are appended.
-//
-// If existingErr is  nil, Append behaves like Wrap on newErr, thus returning a non-compound error. In all other cases a
-// compound error is returned.
+// wrapped errors, or compound errors. If newErr is a compound error, all its inner errors are appended. If existingErr
+// is  nil, Append behaves like Wrap on newErr, thus returning a non-compound error. In all other cases a compound error
+// is returned.
 func Append(existingErr, newErr error) error {
 	if newErr == nil {
 		panic("nil error")
@@ -226,7 +225,7 @@ func Split(err error) []error {
 	}
 }
 
-// MaybeSplit is like Split, but returns an empty nil if err is nil.
+// MaybeSplit is like Split, but returns nil if err is nil.
 func MaybeSplit(err error) []error {
 	if err == nil {
 		return nil
@@ -268,8 +267,8 @@ func Unwrap(err error) error {
 }
 
 // Equals returns true if the given error equals any of the given causes. If the given error is a compound error, Equals
-// returns true if any of the inner errors equals any of the given causes. Both the given error and causes are
-// unwrapped before checking for equality.
+// returns true if any of the inner errors equals any of the given causes. Causes can also be compound errors, in which
+// case inner errors are flattened out. Both the given error and causes are unwrapped before checking for equality.
 func Equals(err error, causes ...error) bool {
 	if wErrs, ok := err.(wrappedErrors); ok {
 		for _, wErr := range wErrs {
