@@ -256,7 +256,7 @@ func TestWrapRecover(t *testing.T) {
 func TestWrapRecover_Compound(t *testing.T) {
 	err := errors.Append(nil, errors.Errorf("first error"))
 	err = errors.Append(err, errors.Errorf("second error"))
-	err = errors.Wrap(err)
+	err = errors.WrapRecover(err)
 	require.Equal(t, "multiple errors: first error · second error", err.Error())
 }
 
@@ -441,6 +441,12 @@ func TestSplit(t *testing.T) {
 	require.Equal(t, err, errors.Unwrap(errs[0]))
 	require.Len(t, errs, 1)
 
+	err = errors.Errorf("test error")
+	errs = errors.Split(err)
+	require.EqualError(t, errs[0], "test error"+
+		"")
+	require.Len(t, errs, 1)
+
 	err1 := fmt.Errorf("first error")
 	err2 := fmt.Errorf("second error")
 	err = errors.Append(nil, err1)
@@ -608,4 +614,7 @@ func TestEquals(t *testing.T) {
 	require.True(t, errors.Equals(errors.Wrap(err), errors.Wrap(err)))
 	wErr := errors.Wrap(err)
 	require.True(t, errors.Equals(wErr, wErr))
+	errs := errors.Append(err, fmt.Errorf("other error"))
+	require.True(t, errors.Equals(errs, err))
+	require.True(t, errors.Equals(err, errs))
 }
