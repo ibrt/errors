@@ -1,36 +1,72 @@
 // Package errors extends the functionality of Go's built-in error interface: it attaches stack traces to errors and
-// supports behaviors such as carrying debug values and HTTP status codes. Additional behaviors can be easily
-// implemented by users. The provided *Error type implements error and can be used interchangeably with code that
-// expects a regular error return. Additionally, multiple errors can be merged in a single one using the provided Errors
-// type.
+// supports behaviors such as carrying debug values and HTTP status codes. Additional behaviors that store metadata on
+// errors can be easily implemented by users. Multiple errors can be merged into a compound one.
 //
 // The package provides several built-in behaviors (Prefix, Metadata, Callers, Skip, PublicMessage, HTTPStatus), ways to
 // wrap and create errors (Errorf, MustErrorf, (Maybe)?Wrap, (Maybe)?MustWrap, (Maybe)?WrapRecover), ways to compound
-// errors ((Maybe)?Append) and utilities (Assert, Ignore, IgnoreClose, Unwrap, Equals).
+// errors ((Maybe)?Append, ((Maybe?)Split) and utilities (Assert, Ignore, IgnoreClose, Unwrap, Equals).
+//
+// A wrapped error augments Go built-in errors with stack traces and additional behaviors. It can be created from an
+// existing error using one of the Wrap function variants, or from scratch using one of the Errorf variants. To clients
+// it appears to be a generic Go error, but functions in this library understand its magic and can manipulate it
+// accordingly.
+//
+// This library also supports compound errors, i.e. an error composed by multiple inner errors. They can be created
+// using one of the Append function variants, and - if needed - decomposed back using one of the Split function
+// variants. Compound errors can generally be consumed as any other error, although they are subject to special
+// treatment within this library:
+//
+// Error returns "multiple errors:" followed by the concatenation of all inner error strings; on wrap, behaviors are
+// always applied to the last inner error; metadata etters such as GetPublicMessage will search starting from the last
+// inner error and return the first match found; Equals matches against all of the inner errors, returning true if at
+// least one matches; Unwrap unwraps and returns the last inner error. Finally, an empty compound error is generally
+// treated as a nil error.
+//
+// Detailed usage examples are provided for all methods and types below.
 package errors
 
 import (
 	"fmt"
 	"io"
+	"strings"
 )
 
-// Error augments Go built-in errors with stack traces and additional behaviors.
-type Error struct {
+type wrappedError struct {
 	err      error
 	metadata map[interface{}]interface{}
 }
 
 // Error implements error.
-func (e *Error) Error() string {
+func (e *wrappedError) Error() string {
 	if e == nil {
 		panic("nil error")
 	}
 	return GetPrefix(e) + e.err.Error()
 }
 
-// Wrap wraps the given error into an *Error, applying the given behaviors plus Callers. If the given error is already
-// wrapped, only the behaviors are applied. If the given error is a compound error, Wrap is applied to the last inner
-// error.
+type wrappedErrors []*wrappedError
+
+// Error implements error.
+func (e wrappedErrors) Error() string {
+	if e == nil || len(e) == 0 {
+		panic("nil error")
+	}
+
+	b := strings.Builder{}
+	b.WriteString("multiple errors: ")
+
+	for i, err := range e {
+		if i > 0 {
+			b.WriteString(" · ")
+		}
+		b.WriteString(err.Error())
+	}
+
+	return b.String()
+}
+
+// Wrap wraps the given error, applying the given behaviors plus Callers. If the given error is already wrapped, only
+// the behaviors are applied. If the given error is a compound error, Wrap is applied to the last inner error.
 func Wrap(err error, behaviors ...Behavior) error {
 	if err == nil {
 		panic("nil error")
@@ -38,12 +74,12 @@ func Wrap(err error, behaviors ...Behavior) error {
 
 	behaviors = append([]Behavior{Callers(), Skip(2)}, behaviors...)
 
-	if wErr, ok := err.(*Error); ok {
+	if wErr, ok := err.(*wrappedError); ok {
 		Behaviors(behaviors...)(true, wErr)
 		return wErr
 	}
 
-	if wErrs, ok := err.(Errors); ok {
+	if wErrs, ok := err.(wrappedErrors); ok {
 		if len(wErrs) == 0 {
 			panic("nil error")
 		}
@@ -52,7 +88,7 @@ func Wrap(err error, behaviors ...Behavior) error {
 		return wErrs
 	}
 
-	wErr := &Error{
+	wErr := &wrappedError{
 		err:      err,
 		metadata: make(map[interface{}]interface{}),
 	}
@@ -66,7 +102,7 @@ func MaybeWrap(err error, behaviors ...Behavior) error {
 	if err == nil {
 		return nil
 	}
-	if wErrs, ok := err.(Errors); ok && len(wErrs) == 0 {
+	if wErrs, ok := err.(wrappedErrors); ok && len(wErrs) == 0 {
 		return nil
 	}
 
@@ -79,7 +115,7 @@ func MustWrap(err error, behaviors ...Behavior) {
 	if err == nil {
 		panic("nil error")
 	}
-	if wErrs, ok := err.(Errors); ok && len(wErrs) == 0 {
+	if wErrs, ok := err.(wrappedErrors); ok && len(wErrs) == 0 {
 		panic("nil error")
 	}
 
@@ -92,7 +128,7 @@ func MaybeMustWrap(err error, behaviors ...Behavior) {
 	if err == nil {
 		return
 	}
-	if wErrs, ok := err.(Errors); ok && len(wErrs) == 0 {
+	if wErrs, ok := err.(wrappedErrors); ok && len(wErrs) == 0 {
 		return
 	}
 
@@ -105,16 +141,16 @@ func WrapRecover(r interface{}, behaviors ...Behavior) error {
 	if r == nil {
 		panic("nil recover")
 	}
-	if wErrs, ok := r.(Errors); ok && len(wErrs) == 0 {
+	if wErrs, ok := r.(wrappedErrors); ok && len(wErrs) == 0 {
 		panic("nil recover")
 	}
 
 	behaviors = append(behaviors, Skip(1))
 
 	switch r := r.(type) {
-	case *Error:
+	case *wrappedError:
 		return r
-	case Errors:
+	case wrappedErrors:
 		return r
 	case error:
 		return Wrap(r, behaviors...)
@@ -128,7 +164,7 @@ func MaybeWrapRecover(r interface{}, behaviors ...Behavior) error {
 	if r == nil {
 		return nil
 	}
-	if wErrs, ok := r.(Errors); ok && len(wErrs) == 0 {
+	if wErrs, ok := r.(wrappedErrors); ok && len(wErrs) == 0 {
 		return nil
 	}
 
@@ -160,17 +196,16 @@ func MustErrorf(format string, behaviorOrArg ...interface{}) {
 	panic(Errorf(format, behaviorOrArg...))
 }
 
-// Append appends newErr to existingErr, creating or extending a compound error. See the Errors type GoDoc for more
-// information about compound errors. All parameters can be of type error, *Error, or Errors. If newErr is a compound
-// error, all the inner errors are appended.
+// Append appends newErr to existingErr, creating or extending a compound error. All parameters can be unwrapped errors,
+// wrapped errors, or compound errors. If newErr is a compound error, all the inner errors are appended.
 //
-// Note: if existingErr is  nil, Append behaves like Wrap on newErr, thus returning a non-compound error. In all other
-// cases a compound error is returned.
+// If existingErr is  nil, Append behaves like Wrap on newErr, thus returning a non-compound error. In all other cases a
+// compound error is returned.
 func Append(existingErr, newErr error) error {
 	if newErr == nil {
 		panic("nil error")
 	}
-	if wErr, ok := newErr.(Errors); ok && len(wErr) == 0 {
+	if wErr, ok := newErr.(wrappedErrors); ok && len(wErr) == 0 {
 		panic("nil error")
 	}
 
@@ -178,40 +213,75 @@ func Append(existingErr, newErr error) error {
 		return Wrap(newErr)
 	}
 
-	var wErrs Errors
+	var wErrs wrappedErrors
 
 	switch err := existingErr.(type) {
-	case *Error:
-		wErrs = Errors{err}
-	case Errors:
+	case *wrappedError:
+		wErrs = wrappedErrors{err}
+	case wrappedErrors:
 		if len(err) == 0 {
 			return Wrap(newErr)
 		}
 		wErrs = err
 	default:
-		wErrs = Errors{Wrap(err).(*Error)}
+		wErrs = wrappedErrors{Wrap(err).(*wrappedError)}
 	}
 
 	switch err := newErr.(type) {
-	case *Error:
+	case *wrappedError:
 		return append(wErrs, err)
-	case Errors:
+	case wrappedErrors:
 		return append(wErrs, err...)
 	default:
-		return append(wErrs, Wrap(err).(*Error))
+		return append(wErrs, Wrap(err).(*wrappedError))
 	}
 }
 
-// MaybeAppend is like Append, but simply returns existingErr if newErr is nil.
+// MaybeAppend is like Append, but returns existingErr if newErr is nil.
 func MaybeAppend(existingErr, newErr error) error {
 	if newErr == nil {
 		return existingErr
 	}
-	if wErr, ok := newErr.(Errors); ok && len(wErr) == 0 {
+	if wErr, ok := newErr.(wrappedErrors); ok && len(wErr) == 0 {
 		return existingErr
 	}
 
 	return Append(existingErr, newErr)
+}
+
+// Split allows access to the inner errors of a compound error. If the given error is not a compound error, the returned
+// slice will contain such error as the single element.
+func Split(err error) []error {
+	if err == nil {
+		panic("nil error")
+	}
+
+	switch err := err.(type) {
+	case *wrappedError:
+		return []error{err}
+	case wrappedErrors:
+		if len(err) == 0 {
+			panic("nil error")
+		}
+		errs := make([]error, len(err))
+		for i, err := range err {
+			errs[i] = err
+		}
+		return errs
+	default:
+		return []error{err}
+	}
+}
+
+// MaybeSplit is like Split, but returns an empty slice if err is nil or empty.
+func MaybeSplit(err error) []error {
+	if err == nil {
+		return []error{}
+	}
+	if wErrs, ok := err.(wrappedErrors); ok && len(wErrs) == 0 {
+		return []error{}
+	}
+	return Split(err)
 }
 
 // Assert is like MustErrorf if cond is false, does nothing otherwise.
@@ -237,10 +307,10 @@ func IgnoreClose(c io.Closer) {
 // Unwrap undoes Wrap, returning the original error. If the given error is already unwrapped, it is simply returned
 // as is. If the given error is a compound error, the last inner error is unwrapped and returned.
 func Unwrap(err error) error {
-	if wErr, ok := err.(*Error); ok {
+	if wErr, ok := err.(*wrappedError); ok {
 		return wErr.err
 	}
-	if wErrs, ok := err.(Errors); ok {
+	if wErrs, ok := err.(wrappedErrors); ok {
 		return Unwrap(wErrs[len(wErrs)-1])
 	}
 
@@ -251,7 +321,7 @@ func Unwrap(err error) error {
 // returns true if any of the inner errors equals any of the given causes. Both the given error and causes are
 // unwrapped before checking for equality.
 func Equals(err error, causes ...error) bool {
-	if wErrs, ok := err.(Errors); ok {
+	if wErrs, ok := err.(wrappedErrors); ok {
 		for _, wErr := range wErrs {
 			if Equals(wErr, causes...) {
 				return true
@@ -264,7 +334,7 @@ func Equals(err error, causes ...error) bool {
 	err = Unwrap(err)
 
 	for _, cause := range causes {
-		if wErrs, ok := cause.(Errors); ok {
+		if wErrs, ok := cause.(wrappedErrors); ok {
 			for _, cause := range wErrs {
 				if err == Unwrap(cause) {
 					return true

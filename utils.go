@@ -28,9 +28,9 @@ func FormatCallers(callers []uintptr) []string {
 
 // Behaviors compounds multiple behaviors in a single Behavior.
 func Behaviors(behaviors ...Behavior) Behavior {
-	return func(doubleWrap bool, e *Error) {
+	return func(doubleWrap bool, err error) {
 		for _, behavior := range behaviors {
-			behavior(doubleWrap, e)
+			behavior(doubleWrap, err)
 		}
 	}
 }

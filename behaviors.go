@@ -6,13 +6,13 @@ import (
 	"runtime"
 )
 
-// Behavior describes an additional behavior to be applied to the Error.
-type Behavior func(bool, *Error)
+// Behavior describes an additional behavior to be applied to the error.
+type Behavior func(doubleWrap bool, err error)
 
 // Metadata returns a Behavior that stores the given key/value pair in the error metadata.
 func Metadata(key, value interface{}) Behavior {
-	return func(_ bool, e *Error) {
-		e.metadata[key] = value
+	return func(_ bool, err error) {
+		err.(*wrappedError).metadata[key] = value
 	}
 }
 
@@ -20,11 +20,11 @@ func Metadata(key, value interface{}) Behavior {
 // If the given error is compound, the key is searched starting from the last inner error, and the first match (if any)
 // is returned.
 func GetMetadata(err error, key interface{}) interface{} {
-	if e, ok := err.(*Error); ok {
+	if e, ok := err.(*wrappedError); ok {
 		return e.metadata[key]
 	}
 
-	if e, ok := err.(Errors); ok {
+	if e, ok := err.(wrappedErrors); ok {
 		for i := len(e) - 1; i >= 0; i-- {
 			if v, ok := e[i].metadata[key]; ok {
 				return v
@@ -38,16 +38,16 @@ func GetMetadata(err error, key interface{}) interface{} {
 // Callers is a Behavior that stores a stack trace in the error metadata.
 // It is automatically applied on Wrap.
 func Callers() Behavior {
-	return func(doubleWrap bool, e *Error) {
-		if GetCallers(e) == nil {
+	return func(doubleWrap bool, err error) {
+		if GetCallers(err) == nil {
 			callers := make([]uintptr, 1024)
-			Metadata(reflect.ValueOf(Callers), callers[:runtime.Callers(2, callers[:])])(doubleWrap, e)
+			Metadata(reflect.ValueOf(Callers), callers[:runtime.Callers(2, callers[:])])(doubleWrap, err)
 		}
 	}
 }
 
 // GetCallers extracts a stack trace from the error metadata, if any.
-// It returns nil if no stack trace was set.
+// It returns nil if no stack trace was set. The callers behavior is automatically applied on wrap.
 func GetCallers(err error) []uintptr {
 	if callers, ok := GetMetadata(err, reflect.ValueOf(Callers)).([]uintptr); ok {
 		return callers
@@ -67,9 +67,9 @@ func GetCallersOrCurrent(err error) []uintptr {
 
 // Skip returns a Behavior that skips the given amount of trailing frames in the stack trace.
 func Skip(skip int) Behavior {
-	return func(doubleWrap bool, e *Error) {
-		if callers := GetCallers(e); !doubleWrap && callers != nil && len(callers) > skip {
-			Metadata(reflect.ValueOf(Callers), callers[skip:])(doubleWrap, e)
+	return func(doubleWrap bool, err error) {
+		if callers := GetCallers(err); !doubleWrap && callers != nil && len(callers) > skip {
+			Metadata(reflect.ValueOf(Callers), callers[skip:])(doubleWrap, err)
 		}
 	}
 }
@@ -77,8 +77,8 @@ func Skip(skip int) Behavior {
 // Prefix returns a Behavior that prepends a prefix to the error message.
 // The prefixFormat and parameters are first passed through fmt.Sprintf().
 func Prefix(prefixFormat string, a ...interface{}) Behavior {
-	return func(doubleWrap bool, e *Error) {
-		Metadata(reflect.ValueOf(Prefix), fmt.Sprintf(prefixFormat, a...)+": "+GetPrefix(e))(doubleWrap, e)
+	return func(doubleWrap bool, err error) {
+		Metadata(reflect.ValueOf(Prefix), fmt.Sprintf(prefixFormat, a...)+": "+GetPrefix(err))(doubleWrap, err)
 	}
 }
 

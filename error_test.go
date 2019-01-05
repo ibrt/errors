@@ -7,12 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/ibrt/errors"
+	"github.com/stretchr/testify/require"
 )
 
-func Example() {
+func Example_simple() {
 	doSomething := func() error {
 		if _, err := strings.NewReader("").Read(make([]byte, 1024)); err != nil {
 			return errors.Wrap(err,
@@ -37,6 +36,52 @@ func Example() {
 	// internal server error
 	// true
 	// true
+}
+
+func Example_compound() {
+	doSomething := func() error {
+		if _, err := strings.NewReader("").Read(make([]byte, 1024)); err != nil {
+			return errors.Wrap(err,
+				errors.Prefix("read failed"),
+				errors.HTTPStatus(http.StatusInternalServerError),
+				errors.PublicMessage("internal server error"))
+		}
+		return nil
+	}
+
+	doSomethingElse := func() error {
+		return fmt.Errorf("some error")
+	}
+
+	var errs error
+
+	if err := doSomething(); err != nil {
+		errs = errors.Append(errs, err)
+	}
+	if err := doSomethingElse(); err != nil {
+		errs = errors.Append(errs, err)
+	}
+
+	if errs != nil {
+		fmt.Println(errs.Error())
+		fmt.Println(errors.GetHTTPStatus(errs))
+		fmt.Println(errors.GetPublicMessage(errs))
+		fmt.Println(errors.Equals(errs, io.EOF))
+		fmt.Println(errors.Unwrap(errs) == io.EOF) // Unwrap returns the last error
+	}
+
+	for _, err := range errors.Split(errs) {
+		fmt.Println(err.Error())
+	}
+
+	// Output:
+	// multiple errors: read failed: EOF · some error
+	// 500
+	// internal server error
+	// true
+	// false
+	// read failed: EOF
+	// some error
 }
 
 func ExampleWrap() {
@@ -93,7 +138,7 @@ func TestMaybeWrap(t *testing.T) {
 
 func ExampleMustWrap() {
 	defer func() {
-		fmt.Println(recover().(error).Error())
+		fmt.Println("panic:", recover().(error).Error())
 	}()
 
 	doSomething := func() error {
@@ -106,7 +151,7 @@ func ExampleMustWrap() {
 	doSomething()
 
 	// Output:
-	// read failed: EOF
+	// panic: read failed: EOF
 }
 
 func TestMustWrap(t *testing.T) {
@@ -136,13 +181,13 @@ func TestMaybeMustWrap(t *testing.T) {
 
 func ExampleWrapRecover() {
 	defer func() {
-		fmt.Println(errors.WrapRecover(recover(), errors.Prefix("read failed")).Error())
+		fmt.Println("panic:", errors.WrapRecover(recover(), errors.Prefix("read failed")).Error())
 	}()
 
 	panic("test error")
 
 	// Output:
-	// read failed: test error
+	// panic: read failed: test error
 }
 
 func TestWrapRecover(t *testing.T) {
@@ -201,13 +246,13 @@ func TestErrorf(t *testing.T) {
 
 func ExampleMustErrorf() {
 	defer func() {
-		fmt.Println(errors.WrapRecover(recover()).Error())
+		fmt.Println("panic:", errors.WrapRecover(recover()).Error())
 	}()
 
 	errors.MustErrorf("test error: %v", "EOF", errors.Prefix("prefix"))
 
 	// Output:
-	// prefix: test error: EOF
+	// panic: prefix: test error: EOF
 }
 
 func TestMustErrorf(t *testing.T) {
@@ -216,14 +261,14 @@ func TestMustErrorf(t *testing.T) {
 
 func ExampleAssert() {
 	defer func() {
-		fmt.Println(errors.WrapRecover(recover()).Error())
+		fmt.Println("panic:", errors.WrapRecover(recover()).Error())
 	}()
 
 	errors.Assert(true, "test error: %v", "true", errors.Prefix("prefix"))
 	errors.Assert(false, "test error: %v", "false", errors.Prefix("prefix"))
 
 	// Output:
-	// prefix: test error: false
+	// panic: prefix: test error: false
 }
 
 func TestAssert(t *testing.T) {
@@ -252,6 +297,15 @@ func (c *testCloser) Close() error {
 }
 
 func ExampleIgnoreClose() {
+	// type testCloser struct {
+	//   closed bool
+	// }
+	//
+	// func (c *testCloser) Close() error {
+	//	 c.closed = true
+	//	 return nil
+	// }
+
 	tc := &testCloser{}
 	fmt.Println(tc.closed)
 	errors.IgnoreClose(tc)
