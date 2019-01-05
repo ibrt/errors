@@ -10,11 +10,12 @@ ways to compound errors `((Maybe)?Append`, `((Maybe?)Split)` and utilities (`Ass
 `Equals`).
 
 A wrapped error augments Go built-in errors with stack traces and additional behaviors. It can be created from an
-existing error using one of the Wrap function variants, or from scratch using one of the Errorf variants. To clients it 
-appears to be a generic Go error, but functions in this library understand its magic and can manipulate it accordingly.
+existing error using one of the `Wrap` function variants, or from scratch using one of the `Errorf` variants. To clients 
+it appears to be a generic Go error, but functions in this library understand its magic and can manipulate it 
+accordingly.
 
 This library also supports compound errors, i.e. an error composed by multiple inner errors. They can be created using 
-one of the Append function variants, and - if needed - decomposed back using one of the Split function variants. 
+one of the `Append` function variants, and - if needed - decomposed back using one of the `Split` function variants. 
 Compound errors can generally be consumed as any other error, although they are subject to special treatment within this
 library as documented on individual methods.
 
