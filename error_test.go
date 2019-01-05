@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Example_simple() {
+func Example() {
 	doSomething := func() error {
 		if _, err := strings.NewReader("").Read(make([]byte, 1024)); err != nil {
 			return errors.Wrap(err,
@@ -84,6 +84,17 @@ func Example_compound() {
 	// some error
 }
 
+func TestError(t *testing.T) {
+	err := errors.Errorf("some error")
+	require.Equal(t, "some error", err.Error())
+}
+
+func TestErrors(t *testing.T) {
+	err := errors.Append(nil, errors.Errorf("first error"))
+	err = errors.Append(err, errors.Errorf("second error"))
+	require.Equal(t, "multiple errors: first error · second error", err.Error())
+}
+
 func ExampleWrap() {
 	doSomething := func() error {
 		if _, err := strings.NewReader("").Read(make([]byte, 1024)); err != nil {
@@ -108,11 +119,53 @@ func ExampleWrap() {
 	// true
 }
 
+func ExampleWrap_compound() {
+	doSomething := func() error {
+		if _, err := strings.NewReader("").Read(make([]byte, 1024)); err != nil {
+			return errors.Wrap(err,
+				errors.Prefix("read failed"),
+				errors.HTTPStatus(http.StatusInternalServerError))
+		}
+		return nil
+	}
+
+	doSomethingElse := func() error {
+		return fmt.Errorf("some error")
+	}
+
+	var errs error
+
+	if err := doSomething(); err != nil {
+		errs = errors.Append(errs, err)
+	}
+	if err := doSomethingElse(); err != nil {
+		errs = errors.Append(errs, err)
+	}
+
+	errs = errors.Wrap(errs, errors.Prefix("prefix"))
+
+	for _, err := range errors.Split(errs) {
+		fmt.Println(err.Error())
+	}
+
+	// Output:
+	// read failed: EOF
+	// prefix: some error
+}
+
 func TestWrap(t *testing.T) {
 	err := errors.Wrap(fmt.Errorf("test error"))
 	require.Equal(t, "test error", err.Error())
 	require.True(t, strings.HasPrefix(errors.FormatCallers(errors.GetCallers(err))[0], "errors_test.TestWrap"))
 	require.PanicsWithValue(t, "nil error", func() { errors.Wrap(nil) })
+}
+
+func TestWrap_Compound(t *testing.T) {
+	err := errors.Append(nil, errors.Errorf("first error"))
+	err = errors.Append(err, errors.Errorf("second error"))
+	err = errors.Wrap(err, errors.Prefix("prefix"))
+	require.Equal(t, "", errors.GetPrefix(errors.Split(err)[0]))
+	require.Equal(t, "prefix: ", errors.GetPrefix(errors.Split(err)[1]))
 }
 
 func ExampleMaybeWrap() {
@@ -200,6 +253,13 @@ func TestWrapRecover(t *testing.T) {
 	require.PanicsWithValue(t, "nil recover", func() { errors.WrapRecover(nil) })
 }
 
+func TestWrapRecover_Compound(t *testing.T) {
+	err := errors.Append(nil, errors.Errorf("first error"))
+	err = errors.Append(err, errors.Errorf("second error"))
+	err = errors.Wrap(err)
+	require.Equal(t, "multiple errors: first error · second error", err.Error())
+}
+
 func ExampleMaybeWrapRecover() {
 	defer func() {
 		fmt.Println(errors.MaybeWrapRecover(recover()))
@@ -257,6 +317,164 @@ func ExampleMustErrorf() {
 
 func TestMustErrorf(t *testing.T) {
 	require.Panics(t, func() { errors.MustErrorf("test error") })
+}
+
+func ExampleAppend() {
+	doSomething := func(i int) error {
+		return errors.Errorf("test error %v", i)
+	}
+
+	var errs error
+
+	for i := 0; i < 3; i++ {
+		if err := doSomething(i); err != nil {
+			errs = errors.Append(errs, err)
+		}
+	}
+
+	if errs != nil {
+		fmt.Println(errs.Error())
+	}
+
+	// Output:
+	// multiple errors: test error 0 · test error 1 · test error 2
+}
+
+func ExampleAppend_success() {
+	doSomething := func(i int) error {
+		return nil
+	}
+
+	var errs error
+
+	for i := 0; i < 3; i++ {
+		if err := doSomething(i); err != nil {
+			errs = errors.Append(errs, err)
+		}
+	}
+
+	fmt.Println(errs == nil)
+
+	// Output:
+	// true
+}
+
+func TestAppend(t *testing.T) {
+	err := errors.Append(nil, fmt.Errorf("test error"))
+	require.Equal(t, "test error", err.Error())
+
+	var err2 error
+	err2 = errors.Append(err2, fmt.Errorf("test error"))
+	require.Equal(t, "test error", err2.Error())
+
+	err = errors.Append(nil, errors.Errorf("first error"))
+	err = errors.Append(err, errors.Errorf("second error"))
+	err = errors.Append(err, errors.Errorf("third error"))
+	require.Equal(t, "multiple errors: first error · second error · third error", err.Error())
+
+	err3 := errors.Append(nil, fmt.Errorf("fourth error"))
+	err3 = errors.Append(err3, errors.Errorf("fifth error"))
+	err3 = errors.Append(err, err3)
+	require.Equal(t, "multiple errors: first error · second error · third error · fourth error · fifth error", err3.Error())
+
+	require.Panics(t, func() { errors.Append(nil, nil) })
+}
+
+func ExampleMaybeAppend() {
+	doSomething := func(i int) error {
+		if i%2 == 0 {
+			return nil
+		}
+		return errors.Errorf("test error %v", i)
+	}
+
+	var errs error
+
+	for i := 0; i < 4; i++ {
+		errs = errors.MaybeAppend(errs, doSomething(i))
+
+	}
+
+	if errs != nil {
+		fmt.Println(errs.Error())
+	}
+
+	// Output:
+	// multiple errors: test error 1 · test error 3
+}
+
+func TestMaybeAppend(t *testing.T) {
+	err := errors.MaybeAppend(nil, nil)
+	require.Nil(t, err)
+
+	err2 := fmt.Errorf("test error")
+	err = errors.MaybeAppend(err2, nil)
+	require.Equal(t, err2, err)
+}
+
+func ExampleSplit() {
+	doSomething := func(i int) error {
+		return errors.Errorf("test error %v", i)
+	}
+
+	var errs error
+
+	for i := 0; i < 3; i++ {
+		if err := doSomething(i); err != nil {
+			errs = errors.Append(errs, err)
+		}
+	}
+
+	for _, err := range errors.Split(errs) {
+		fmt.Println(err.Error())
+	}
+
+	// Output:
+	// test error 0
+	// test error 1
+	// test error 2
+}
+
+func TestSplit(t *testing.T) {
+	err := fmt.Errorf("test error")
+	errs := errors.Split(err)
+	require.Equal(t, err, errors.Unwrap(errs[0]))
+	require.Len(t, errs, 1)
+
+	err1 := fmt.Errorf("first error")
+	err2 := fmt.Errorf("second error")
+	err = errors.Append(nil, err1)
+	err = errors.Append(err, err2)
+	errs = errors.Split(err)
+	require.Equal(t, err1, errors.Unwrap(errs[0]))
+	require.Equal(t, err2, errors.Unwrap(errs[1]))
+	require.Len(t, errs, 2)
+
+	require.Panics(t, func() { errors.Split(nil) })
+}
+
+func ExampleMaybeSplit() {
+	doSomething := func(i int) error {
+		return nil
+	}
+
+	var errs error
+
+	for i := 0; i < 3; i++ {
+		errs = errors.MaybeAppend(errs, doSomething(i))
+	}
+
+	fmt.Println(errors.MaybeSplit(errs) == nil)
+
+	// Output:
+	// true
+}
+
+func TestMaybeSplit(t *testing.T) {
+	require.Nil(t, errors.MaybeSplit(nil))
+	errs := errors.MaybeSplit(fmt.Errorf("test error"))
+	require.EqualError(t, errs[0], "test error")
+	require.Len(t, errs, 1)
 }
 
 func ExampleAssert() {
@@ -337,6 +555,15 @@ func ExampleUnwrap() {
 	// true
 }
 
+func ExampleUnwrap_compound() {
+	err := fmt.Errorf("first error")
+	err = errors.Append(err, fmt.Errorf("second error"))
+	fmt.Println(errors.Unwrap(err).Error())
+
+	// Output:
+	// second error
+}
+
 func TestUnwrap(t *testing.T) {
 	require.Nil(t, errors.Unwrap(nil))
 	err := fmt.Errorf("test error")
@@ -344,6 +571,12 @@ func TestUnwrap(t *testing.T) {
 	require.Equal(t, ret, err)
 	ret = errors.Unwrap(errors.Wrap(err))
 	require.Equal(t, ret, err)
+}
+
+func TestUnwrap_Compound(t *testing.T) {
+	err := fmt.Errorf("first error")
+	err = errors.Append(err, fmt.Errorf("second error"))
+	require.EqualError(t, errors.Unwrap(err), "second error")
 }
 
 func ExampleEquals() {

@@ -6,7 +6,8 @@ import (
 	"runtime"
 )
 
-// Behavior describes an additional behavior to be applied to the error.
+// Behavior describes an additional behavior to be applied to err. When the behavior is invoked, err is assumed to be
+// a wrapped error. The doubleWrap flag indicates whether err is being wrapped for the first time or re-wrapped.
 type Behavior func(doubleWrap bool, err error)
 
 // Metadata returns a Behavior that stores the given key/value pair in the error metadata.
@@ -16,9 +17,8 @@ func Metadata(key, value interface{}) Behavior {
 	}
 }
 
-// GetMetadata extracts the given key from the error metadata.
-// If the given error is compound, the key is searched starting from the last inner error, and the first match (if any)
-// is returned.
+// GetMetadata extracts the given key from the error metadata, or returns nil if not found. If err is a compound error,
+// the key is searched starting from the last inner error, and the first match (if any) is returned.
 func GetMetadata(err error, key interface{}) interface{} {
 	if e, ok := err.(*wrappedError); ok {
 		return e.metadata[key]
@@ -47,7 +47,7 @@ func Callers() Behavior {
 }
 
 // GetCallers extracts a stack trace from the error metadata, if any.
-// It returns nil if no stack trace was set. The callers behavior is automatically applied on wrap.
+// It returns nil if no stack trace was set. The Callers behavior is automatically applied on Wrap.
 func GetCallers(err error) []uintptr {
 	if callers, ok := GetMetadata(err, reflect.ValueOf(Callers)).([]uintptr); ok {
 		return callers

@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/ibrt/errors"
 	"github.com/stretchr/testify/require"
 )
@@ -68,7 +66,6 @@ func TestMetadata(t *testing.T) {
 
 func TestSkip(t *testing.T) {
 	err := errors.Errorf("test error")
-	spew.Dump("XXX", errors.FormatCallers(errors.GetCallers(err)))
 	require.True(t, strings.HasPrefix(errors.FormatCallers(errors.GetCallers(err))[0], "errors_test.TestSkip"))
 	err = errors.Errorf("test error", errors.Skip(1))
 	require.True(t, strings.HasPrefix(errors.FormatCallers(errors.GetCallers(err))[0], "testing.tRunner"))

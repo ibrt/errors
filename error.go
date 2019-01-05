@@ -14,15 +14,7 @@
 // This library also supports compound errors, i.e. an error composed by multiple inner errors. They can be created
 // using one of the Append function variants, and - if needed - decomposed back using one of the Split function
 // variants. Compound errors can generally be consumed as any other error, although they are subject to special
-// treatment within this library:
-//
-// Error returns "multiple errors:" followed by the concatenation of all inner error strings; on wrap, behaviors are
-// always applied to the last inner error; metadata etters such as GetPublicMessage will search starting from the last
-// inner error and return the first match found; Equals matches against all of the inner errors, returning true if at
-// least one matches; Unwrap unwraps and returns the last inner error. Finally, an empty compound error is generally
-// treated as a nil error.
-//
-// Detailed usage examples are provided for all methods and types below.
+// treatment within this library as documented on individual methods.
 package errors
 
 import (
@@ -38,9 +30,6 @@ type wrappedError struct {
 
 // Error implements error.
 func (e *wrappedError) Error() string {
-	if e == nil {
-		panic("nil error")
-	}
 	return GetPrefix(e) + e.err.Error()
 }
 
@@ -48,10 +37,6 @@ type wrappedErrors []*wrappedError
 
 // Error implements error.
 func (e wrappedErrors) Error() string {
-	if e == nil || len(e) == 0 {
-		panic("nil error")
-	}
-
 	b := strings.Builder{}
 	b.WriteString("multiple errors: ")
 
@@ -80,10 +65,6 @@ func Wrap(err error, behaviors ...Behavior) error {
 	}
 
 	if wErrs, ok := err.(wrappedErrors); ok {
-		if len(wErrs) == 0 {
-			panic("nil error")
-		}
-
 		Behaviors(behaviors...)(true, wErrs[len(wErrs)-1])
 		return wErrs
 	}
@@ -102,9 +83,6 @@ func MaybeWrap(err error, behaviors ...Behavior) error {
 	if err == nil {
 		return nil
 	}
-	if wErrs, ok := err.(wrappedErrors); ok && len(wErrs) == 0 {
-		return nil
-	}
 
 	behaviors = append(behaviors, Skip(1))
 	return Wrap(err, behaviors...)
@@ -113,9 +91,6 @@ func MaybeWrap(err error, behaviors ...Behavior) error {
 // MustWrap is like Wrap, but panics if the given error is non-nil.
 func MustWrap(err error, behaviors ...Behavior) {
 	if err == nil {
-		panic("nil error")
-	}
-	if wErrs, ok := err.(wrappedErrors); ok && len(wErrs) == 0 {
 		panic("nil error")
 	}
 
@@ -128,9 +103,6 @@ func MaybeMustWrap(err error, behaviors ...Behavior) {
 	if err == nil {
 		return
 	}
-	if wErrs, ok := err.(wrappedErrors); ok && len(wErrs) == 0 {
-		return
-	}
 
 	behaviors = append(behaviors, Skip(1))
 	MustWrap(err, behaviors...)
@@ -139,9 +111,6 @@ func MaybeMustWrap(err error, behaviors ...Behavior) {
 // WrapRecover takes a recovered interface{} and converts it to a wrapped error.
 func WrapRecover(r interface{}, behaviors ...Behavior) error {
 	if r == nil {
-		panic("nil recover")
-	}
-	if wErrs, ok := r.(wrappedErrors); ok && len(wErrs) == 0 {
 		panic("nil recover")
 	}
 
@@ -162,9 +131,6 @@ func WrapRecover(r interface{}, behaviors ...Behavior) error {
 // MaybeWrapRecover is like WrapRecover but returns nil if called with a nil recover.
 func MaybeWrapRecover(r interface{}, behaviors ...Behavior) error {
 	if r == nil {
-		return nil
-	}
-	if wErrs, ok := r.(wrappedErrors); ok && len(wErrs) == 0 {
 		return nil
 	}
 
@@ -205,9 +171,6 @@ func Append(existingErr, newErr error) error {
 	if newErr == nil {
 		panic("nil error")
 	}
-	if wErr, ok := newErr.(wrappedErrors); ok && len(wErr) == 0 {
-		panic("nil error")
-	}
 
 	if existingErr == nil {
 		return Wrap(newErr)
@@ -219,9 +182,6 @@ func Append(existingErr, newErr error) error {
 	case *wrappedError:
 		wErrs = wrappedErrors{err}
 	case wrappedErrors:
-		if len(err) == 0 {
-			return Wrap(newErr)
-		}
 		wErrs = err
 	default:
 		wErrs = wrappedErrors{Wrap(err).(*wrappedError)}
@@ -242,10 +202,6 @@ func MaybeAppend(existingErr, newErr error) error {
 	if newErr == nil {
 		return existingErr
 	}
-	if wErr, ok := newErr.(wrappedErrors); ok && len(wErr) == 0 {
-		return existingErr
-	}
-
 	return Append(existingErr, newErr)
 }
 
@@ -260,9 +216,6 @@ func Split(err error) []error {
 	case *wrappedError:
 		return []error{err}
 	case wrappedErrors:
-		if len(err) == 0 {
-			panic("nil error")
-		}
 		errs := make([]error, len(err))
 		for i, err := range err {
 			errs[i] = err
@@ -273,13 +226,10 @@ func Split(err error) []error {
 	}
 }
 
-// MaybeSplit is like Split, but returns an empty slice if err is nil or empty.
+// MaybeSplit is like Split, but returns an empty nil if err is nil.
 func MaybeSplit(err error) []error {
 	if err == nil {
-		return []error{}
-	}
-	if wErrs, ok := err.(wrappedErrors); ok && len(wErrs) == 0 {
-		return []error{}
+		return nil
 	}
 	return Split(err)
 }
